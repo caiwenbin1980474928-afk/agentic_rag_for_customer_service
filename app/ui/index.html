@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agentic RAG · 客服 Demo</title>
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-soft: #eef2ff;
+    --bg: #f7f7fb;
+    --surface: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC",
+      "Microsoft YaHei", "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+  header h1 .tag {
+    margin-left: 8px; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; background: var(--primary-soft); color: var(--primary);
+  }
+  header .actions { display: flex; gap: 8px; align-items: center; }
+  select, button.btn {
+    padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer; font-size: 13px;
+  }
+  button.btn:hover { background: var(--primary-soft); border-color: var(--primary); }
+  button.btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+  button.btn.primary:hover { filter: brightness(0.95); }
+
+  main { flex: 1; display: grid; grid-template-columns: 1fr 380px; min-height: 0; }
+
+  /* ---------- Chat pane ---------- */
+  .chat {
+    display: flex; flex-direction: column; min-height: 0;
+    border-right: 1px solid var(--border); background: var(--surface);
+  }
+  .messages { flex: 1; overflow-y: auto; padding: 24px; }
+  .msg { display: flex; margin-bottom: 16px; gap: 10px; }
+  .msg.user { justify-content: flex-end; }
+  .bubble {
+    max-width: 78%; padding: 10px 14px; border-radius: var(--radius);
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .msg.user .bubble { background: var(--primary); color: white; border-bottom-right-radius: 4px; }
+  .msg.ai .bubble { background: #f3f4f6; border-bottom-left-radius: 4px; }
+  .msg.ai .bubble.thinking {
+    color: var(--muted); font-style: italic;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .msg.ai .bubble.thinking::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--primary); animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+  .citations { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .cite {
+    font-size: 12px; padding: 3px 8px; border-radius: 999px;
+    background: var(--primary-soft); color: var(--primary); cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .cite:hover { border-color: var(--primary); }
+  .tool-card {
+    margin-top: 6px; padding: 8px 12px; border-radius: 8px;
+    background: #fff7ed; border-left: 3px solid var(--warn);
+    font-size: 13px; color: #92400e;
+  }
+  .handoff-card {
+    margin-top: 6px; padding: 8px 12px; border-radius: 8px;
+    background: #fef2f2; border-left: 3px solid var(--danger);
+    font-size: 13px; color: #991b1b;
+  }
+  .composer {
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; background: var(--surface);
+  }
+  .composer textarea {
+    flex: 1; resize: none; border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font: inherit; outline: none; min-height: 44px; max-height: 140px;
+  }
+  .composer textarea:focus { border-color: var(--primary); }
+
+  /* ---------- Thinking panel ---------- */
+  .panel { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
+  .panel h2 {
+    margin: 0; padding: 12px 20px; font-size: 13px; font-weight: 600;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .timeline { flex: 1; overflow-y: auto; padding: 12px 16px; }
+  .timeline:empty::before {
+    content: "等待提问 — agent 的每一步决策会显示在这里";
+    display: block; padding: 30px 8px; color: var(--muted); font-size: 13px;
+    text-align: center;
+  }
+  .step {
+    position: relative; padding: 10px 12px 10px 28px; margin-bottom: 8px;
+    border-radius: 8px; background: var(--surface); border: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .step::before {
+    content: ""; position: absolute; left: 10px; top: 16px;
+    width: 8px; height: 8px; border-radius: 50%; background: var(--success);
+  }
+  .step.in-progress::before {
+    background: var(--warn);
+    animation: pulse 1s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.4); }
+  }
+  .step .name { font-weight: 600; color: var(--text); }
+  .step .summary { color: var(--muted); margin-top: 2px; font-size: 12px; }
+  .step details { margin-top: 6px; }
+  .step details summary {
+    cursor: pointer; color: var(--primary); font-size: 12px; outline: none;
+  }
+  .step pre {
+    background: #0f172a; color: #e2e8f0; padding: 8px; border-radius: 6px;
+    font-size: 11px; overflow-x: auto; margin: 6px 0 0;
+    max-height: 200px;
+  }
+  .conv-divider {
+    border-top: 1px dashed var(--border); margin: 12px 0; padding-top: 6px;
+    text-align: center; color: var(--muted); font-size: 11px;
+  }
+
+  @media (max-width: 880px) {
+    main { grid-template-columns: 1fr; }
+    .panel { border-top: 1px solid var(--border); max-height: 40vh; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Agentic RAG · 客服 Demo <span class="tag">演示版</span></h1>
+    <div class="actions">
+      <select id="variant" title="对比不同 agent 配置">
+        <option value="full" selected>E3 Full Agentic</option>
+        <option value="e2">E2 + 改写</option>
+        <option value="e1">E1 + 路由+工具</option>
+        <option value="naive">E0 Naive RAG</option>
+      </select>
+      <button class="btn" id="clear">清空对话</button>
+      <button class="btn" id="ingest" title="重建本地索引">重建索引</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="chat">
+      <div class="messages" id="messages"></div>
+      <div class="composer">
+        <textarea id="input" placeholder="试试：「订单 A1001 到哪了？」 / 「我买的耳机坏了能退吗？」"></textarea>
+        <button class="btn primary" id="send">发送</button>
+      </div>
+    </section>
+    <aside class="panel">
+      <h2>Agent 思考过程</h2>
+      <div class="timeline" id="timeline"></div>
+    </aside>
+  </main>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const messagesEl = $("messages");
+  const timelineEl = $("timeline");
+  const inputEl = $("input");
+  const sendBtn = $("send");
+  const variantEl = $("variant");
+
+  const NODE_LABEL = {
+    router: "1 · router (意图路由)",
+    retrieve: "2 · retrieve (向量检索)",
+    grade_docs: "3 · grade_docs (相关性打分)",
+    rewrite_query: "改写查询",
+    tool_call: "tool_call (调用工具)",
+    generate: "generate (生成答案)",
+    reflect: "reflect (忠实度检查)",
+    human_handoff: "human_handoff (转人工)",
+  };
+
+  function appendUser(text) {
+    const div = document.createElement("div");
+    div.className = "msg user";
+    div.innerHTML = `<div class="bubble"></div>`;
+    div.querySelector(".bubble").textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function appendAI() {
+    const div = document.createElement("div");
+    div.className = "msg ai";
+    div.innerHTML = `
+      <div>
+        <div class="bubble" data-role="bubble"></div>
+        <div class="citations" data-role="citations"></div>
+      </div>`;
+    messagesEl.appendChild(div);
+    const bubble = div.querySelector('[data-role="bubble"]');
+    startThinking(bubble);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
+  }
+
+  const THINKING_HINT = {
+    router: "正在判断意图…",
+    retrieve: (out) => `正在检索资料（第 ${out?.round || 1} 轮）…`,
+    grade_docs: "正在评估资料相关性…",
+    rewrite_query: "结果不理想，正在重写检索词…",
+    tool_call: "正在调用工具…",
+    generate: "正在生成回答…",
+    reflect: "正在自检答案…",
+    human_handoff: "正在转人工…",
+  };
+
+  function startThinking(bubble) {
+    bubble.classList.add("thinking");
+    bubble.dataset.thinkingStart = String(Date.now());
+    bubble.dataset.thinkingLabel = "正在思考";
+    bubble.textContent = "正在思考… 0.0s";
+    const timer = setInterval(() => {
+      if (!bubble.classList.contains("thinking")) {
+        clearInterval(timer);
+        return;
+      }
+      const start = Number(bubble.dataset.thinkingStart || 0);
+      const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+      const label = bubble.dataset.thinkingLabel || "正在思考";
+      bubble.textContent = `${label}… ${elapsed}s`;
+    }, 100);
+    bubble.dataset.timerId = String(timer);
+  }
+
+  function updateThinking(bubble, node, out) {
+    if (!bubble.classList.contains("thinking")) return;
+    const hint = THINKING_HINT[node];
+    if (!hint) return;
+    const label = (typeof hint === "function" ? hint(out) : hint).replace(/…$/, "");
+    bubble.dataset.thinkingLabel = label;
+  }
+
+  function clearThinking(bubble) {
+    if (bubble.classList.contains("thinking")) {
+      bubble.classList.remove("thinking");
+      const tid = Number(bubble.dataset.timerId || 0);
+      if (tid) clearInterval(tid);
+      delete bubble.dataset.thinkingStart;
+      delete bubble.dataset.thinkingLabel;
+      delete bubble.dataset.timerId;
+      bubble.textContent = "";
+    }
+  }
+
+  function appendStep(payload) {
+    const step = document.createElement("div");
+    step.className = "step in-progress";
+    const label = NODE_LABEL[payload.node] || payload.node;
+    const out = payload.output || {};
+    const summary = summarize(payload.node, out);
+
+    step.innerHTML = `
+      <div class="name">${label}</div>
+      <div class="summary"></div>
+      <details><summary>详细 I/O</summary><pre></pre></details>
+    `;
+    step.querySelector(".summary").textContent = summary;
+    step.querySelector("pre").textContent = JSON.stringify(payload, null, 2);
+    timelineEl.appendChild(step);
+
+    // mark previous step as completed
+    const all = timelineEl.querySelectorAll(".step.in-progress");
+    all.forEach((s, idx) => { if (idx < all.length - 1) s.classList.remove("in-progress"); });
+    timelineEl.scrollTop = timelineEl.scrollHeight;
+    return step;
+  }
+
+  function summarize(node, out) {
+    if (node === "router") return `route = ${out.route}${out.order_id ? `, order=${out.order_id}` : ""}`;
+    if (node === "retrieve") return `第 ${out?.round || 1} 轮 · 命中 ${out.n_docs} 个片段`;
+    if (node === "grade_docs") return `保留 ${out.kept} / ${out.grades?.length || 0}`;
+    if (node === "rewrite_query") return `改写为：${out.rewritten?.slice(0, 50) || ""}`;
+    if (node === "tool_call") return out.ok ? "工具成功" : "工具未命中";
+    if (node === "generate") return `已生成 (${out.answer_preview?.length || 0} 字)`;
+    if (node === "reflect") return out.grounded ? "答案有依据 ✓" : "可能存在幻觉";
+    if (node === "human_handoff") return "已转人工";
+    return "";
+  }
+
+  function finalizeSteps() {
+    timelineEl.querySelectorAll(".step.in-progress").forEach((s) => s.classList.remove("in-progress"));
+  }
+
+  function renderCitations(container, citations, toolResult) {
+    container.innerHTML = "";
+    if (toolResult) {
+      const t = document.createElement("div");
+      t.className = "tool-card";
+      const data = toolResult.data || {};
+      t.textContent = "🔧 工具结果：" + (typeof data === "string" ? data : JSON.stringify(data));
+      container.appendChild(t);
+    }
+    (citations || []).forEach((c) => {
+      const chip = document.createElement("span");
+      chip.className = "cite";
+      const label = c.section ? `[${c.id}] ${c.source} §${c.section}` : `[${c.id}] ${c.source}`;
+      chip.textContent = label;
+      chip.title = c.snippet;
+      container.appendChild(chip);
+    });
+  }
+
+  async function send() {
+    const question = inputEl.value.trim();
+    if (!question) return;
+    inputEl.value = "";
+    sendBtn.disabled = true;
+
+    if (timelineEl.children.length > 0) {
+      const divider = document.createElement("div");
+      divider.className = "conv-divider";
+      divider.textContent = "— 新一轮 —";
+      timelineEl.appendChild(divider);
+    }
+
+    appendUser(question);
+    const aiNode = appendAI();
+    const bubble = aiNode.querySelector('[data-role="bubble"]');
+    const citationsEl = aiNode.querySelector('[data-role="citations"]');
+
+    let toolResult = null;
+    let endReason = "answered";
+    let finalCitations = [];
+
+    try {
+      const resp = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, variant: variantEl.value }),
+      });
+      if (!resp.ok || !resp.body) throw new Error("connection failed: status " + resp.status);
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buffer = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE 标准事件分隔符是 \n\n 或 \r\n\r\n（不同 ASGI 实现表现不同）
+        let parts = buffer.split(/\r?\n\r?\n/);
+        buffer = parts.pop() || "";
+        for (const block of parts) {
+          if (!block.trim()) continue;
+          const lines = block.split(/\r?\n/);
+          let event = "message", data = "";
+          for (const ln of lines) {
+            if (ln.startsWith("event:")) event = ln.slice(6).trim();
+            else if (ln.startsWith("data:")) data += ln.slice(5).trim();
+          }
+          if (!data) continue;
+          let payload;
+          try { payload = JSON.parse(data); } catch { continue; }
+
+          if (event === "step") {
+            appendStep(payload);
+            updateThinking(bubble, payload.node, payload.output);
+            if (payload.node === "tool_call") toolResult = payload.output;
+          } else if (event === "token") {
+            if (payload.text) {
+              clearThinking(bubble);
+              bubble.textContent += payload.text;
+              messagesEl.scrollTop = messagesEl.scrollHeight;
+            }
+          } else if (event === "done") {
+            finalCitations = payload.citations || [];
+            endReason = payload.end_reason || "answered";
+            if (bubble.classList.contains("thinking") || !bubble.textContent) {
+              clearThinking(bubble);
+              bubble.textContent = payload.answer || "";
+            }
+          } else if (event === "error") {
+            clearThinking(bubble);
+            bubble.textContent = "出错了：" + (payload.message || "未知错误");
+          }
+        }
+      }
+    } catch (err) {
+      bubble.textContent = "连接失败：" + err.message;
+    } finally {
+      finalizeSteps();
+      renderCitations(citationsEl, finalCitations, toolResult);
+      if (endReason === "handoff") {
+        const card = document.createElement("div");
+        card.className = "handoff-card";
+        card.textContent = "↪︎ 已转人工客服";
+        citationsEl.appendChild(card);
+      }
+      sendBtn.disabled = false;
+      inputEl.focus();
+    }
+  }
+
+  sendBtn.addEventListener("click", send);
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+  });
+
+  $("clear").addEventListener("click", () => {
+    messagesEl.innerHTML = "";
+    timelineEl.innerHTML = "";
+  });
+
+  $("ingest").addEventListener("click", async () => {
+    if (!confirm("将重建本地索引，是否继续？")) return;
+    const btn = $("ingest");
+    btn.disabled = true; btn.textContent = "重建中…";
+    try {
+      const resp = await fetch("/api/ingest?rebuild=true", { method: "POST" });
+      const data = await resp.json();
+      alert(`索引完成，共 ${data.chunks} 个 chunk。`);
+    } catch (e) {
+      alert("索引失败：" + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = "重建索引";
+    }
+  });
+</script>
+</body>
+</html>

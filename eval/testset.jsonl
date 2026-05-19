@@ -1,0 +1,32 @@
+{"id": 1, "category": "single-hop", "question": "你们的七天无理由退货是怎么规定的？", "expected_route": "kb", "expected_sources": ["退换货政策.md"], "ground_truth": "签收后 7 个自然日内，商品本体、配件、赠品、发票齐全且包装完好可申请无理由退货；食品、贴身衣物、定制类商品除外。"}
+{"id": 2, "category": "single-hop", "question": "退款一般多久能到账？", "expected_route": "kb", "expected_sources": ["退换货政策.md"], "ground_truth": "仅退款审核通过后 1–3 个工作日原路退回；退货退款在仓库签收质检后 3–5 个工作日退回；信用卡可能延迟 7–15 天。"}
+{"id": 3, "category": "single-hop", "question": "下午 4 点下单还能当天发货吗？", "expected_route": "kb", "expected_sources": ["配送时效.md"], "ground_truth": "不可以。15:00 之前下单当天发货，之后顺延一个工作日。"}
+{"id": 4, "category": "single-hop", "question": "你们包邮门槛是多少？", "expected_route": "kb", "expected_sources": ["配送时效.md"], "ground_truth": "单笔订单满 99 元包邮，不足 99 元收取 10 元运费。"}
+{"id": 5, "category": "single-hop", "question": "金卡会员有什么特权？", "expected_route": "kb", "expected_sources": ["会员等级.md"], "ground_truth": "免运费券 5 张/月、积分 1.5 倍、质保延长到 2 年、节日礼盒 2 次/年。"}
+{"id": 6, "category": "single-hop", "question": "积分多少能抵 1 块钱？", "expected_route": "kb", "expected_sources": ["会员等级.md"], "ground_truth": "100 积分 = 1 元抵扣，单笔订单最多抵扣 30%，积分有效期 24 个月。"}
+{"id": 7, "category": "single-hop", "question": "可以开增值税专用发票吗？", "expected_route": "kb", "expected_sources": ["发票.md"], "ground_truth": "支持，但需提交企业开票资质审核，审核通过后 3 个工作日内开出，仅适用于一般纳税人企业。"}
+{"id": 8, "category": "single-hop", "question": "电子发票一般多久能开出来？", "expected_route": "kb", "expected_sources": ["发票.md"], "ground_truth": "确认收货后即可在订单页发起申请，1 个工作日内开出，发送到下单邮箱并可在 App 下载。"}
+{"id": 9, "category": "single-hop", "question": "屏幕有 1 个坏点算不算质量问题？", "expected_route": "kb", "expected_sources": ["常见故障.md"], "ground_truth": "边缘 1 个坏点在国标允许范围内，不属于质量问题；坏点 ≥ 3 个或位于中心区域才算质量问题。"}
+{"id": 10, "category": "single-hop", "question": "电池鼓包怎么处理？", "expected_route": "kb", "expected_sources": ["常见故障.md"], "ground_truth": "电池鼓包属于安全问题，立刻判定为质量问题并优先处理。"}
+{"id": 11, "category": "multi-hop", "question": "我买的耳机突然没声音，能退吗？", "expected_route": "kb", "expected_sources": ["常见故障.md", "退换货政策.md"], "ground_truth": "耳机单边/双边没声音如排除环境问题且无人为损坏属于质量问题，可走 15 天内质量问题退换货流程，运费由我方承担。"}
+{"id": 12, "category": "multi-hop", "question": "屏幕摔碎了还能保修吗？", "expected_route": "kb", "expected_sources": ["常见故障.md", "退换货政策.md"], "ground_truth": "明显摔痕或外屏破裂属于人为损坏，不属于质量问题，不支持退换货，可走付费维修。"}
+{"id": 13, "category": "multi-hop", "question": "新疆地区下单要多久到？包邮吗？", "expected_route": "kb", "expected_sources": ["配送时效.md"], "ground_truth": "新疆属于偏远地区，配送时效 5–8 天，不支持次日达。不满 99 元收 10 元运费，可能额外加收 15–30 元偏远运费。"}
+{"id": 14, "category": "multi-hop", "question": "黑卡会员的质保期是多少？", "expected_route": "kb", "expected_sources": ["会员等级.md"], "ground_truth": "黑卡会员享 365 天质保延长，从默认 1 年延长到 3 年。"}
+{"id": 15, "category": "multi-hop", "question": "退货以后我之前开的发票怎么办？", "expected_route": "kb", "expected_sources": ["发票.md", "退换货政策.md"], "ground_truth": "全额退货则原发票自动作废；部分退货则原发票作废后按实际成交金额重开，客户需配合提供原发票号或销项联。"}
+{"id": 16, "category": "multi-hop", "question": "刷机以后开不了机算质量问题吗？", "expected_route": "kb", "expected_sources": ["常见故障.md"], "ground_truth": "安装第三方软件、Root 或越狱后出现问题不属于质量问题；但官方 OTA 升级变砖属于质量问题，优先换新。"}
+{"id": 17, "category": "multi-hop", "question": "买了 80 元的东西退一半还包邮吗？", "expected_route": "kb", "expected_sources": ["配送时效.md", "退换货政策.md"], "ground_truth": "80 元不满 99 元，原本就需要支付 10 元运费；如果是无理由退货，往返运费一般由用户承担，质量问题退货则我方承担。"}
+{"id": 18, "category": "multi-hop", "question": "我升级到银卡需要花多少钱？响应快不快？", "expected_route": "kb", "expected_sources": ["会员等级.md"], "ground_truth": "银卡升级条件是近 12 个月累计消费满 1000 元，年费免费；银卡享专属客服通道，人工响应 < 3 分钟。"}
+{"id": 19, "category": "tool", "question": "订单 A1001 现在到哪了？", "expected_route": "tool", "expected_tool": "mock_order_lookup", "expected_args": {"order_id": "A1001"}, "ground_truth": "订单 A1001 派送中，顺丰速运，运单号 SF1234567890，预计明天 14:00 前送达。"}
+{"id": 20, "category": "tool", "question": "帮我查下 a1002 的物流", "expected_route": "tool", "expected_tool": "mock_order_lookup", "expected_args": {"order_id": "A1002"}, "ground_truth": "订单 A1002 已签收（2026-05-16 10:23），京东物流 JD9988776655。"}
+{"id": 21, "category": "tool", "question": "我下单的 A1003 发货了没", "expected_route": "tool", "expected_tool": "mock_order_lookup", "expected_args": {"order_id": "A1003"}, "ground_truth": "订单 A1003 已发货，顺丰速运 SF2233445566，预计 3 天内送达。"}
+{"id": 22, "category": "tool", "question": "A1004 怎么还没发", "expected_route": "tool", "expected_tool": "mock_order_lookup", "expected_args": {"order_id": "A1004"}, "ground_truth": "订单 A1004 状态为「未发货 (待出库)」，下单后 24 小时内会出库。"}
+{"id": 23, "category": "tool", "question": "查一下订单 A9999", "expected_route": "tool", "expected_tool": "mock_order_lookup", "expected_args": {"order_id": "A9999"}, "ground_truth": "未找到该订单，请确认订单号是否正确，可联系客服核实。"}
+{"id": 24, "category": "tool", "question": "我的快递怎么还没到，订单号 A1001", "expected_route": "tool", "expected_tool": "mock_order_lookup", "expected_args": {"order_id": "A1001"}, "ground_truth": "订单 A1001 正在派送中，顺丰速运 SF1234567890，预计明天 14:00 前送达。"}
+{"id": 25, "category": "refuse", "question": "你们公司 CEO 是谁？", "expected_route": "chitchat", "expected_sources": [], "ground_truth": "知识库中没有公司管理层信息，应礼貌说明无法回答并建议用户联系人工客服或访问官网。"}
+{"id": 26, "category": "refuse", "question": "你们今年第四季度的财报数据？", "expected_route": "chitchat", "expected_sources": [], "ground_truth": "知识库中没有财报信息，应礼貌说明无法回答并建议查询投资者关系页面或联系人工客服。"}
+{"id": 27, "category": "refuse", "question": "我能不能跟工厂直接谈批量定制？", "expected_route": "chitchat", "expected_sources": [], "ground_truth": "知识库未涉及批发/定制合作，应礼貌说明无法回答并建议联系商务渠道或转人工客服。"}
+{"id": 28, "category": "refuse", "question": "可以推荐一款别家品牌的耳机吗？", "expected_route": "chitchat", "expected_sources": [], "ground_truth": "客服 AI 不应推荐其他品牌产品，应礼貌拒绝并引导咨询本品产品。"}
+{"id": 29, "category": "chitchat", "question": "你好", "expected_route": "chitchat", "expected_sources": [], "ground_truth": "礼貌打招呼并询问需要什么帮助。"}
+{"id": 30, "category": "chitchat", "question": "谢谢你，再见", "expected_route": "chitchat", "expected_sources": [], "ground_truth": "礼貌告别。"}
+{"id": 31, "category": "handoff", "question": "我要转人工", "expected_route": "handoff", "expected_sources": [], "ground_truth": "应直接转人工客服并给出 400 电话与响应时效（3 分钟内）。"}
+{"id": 32, "category": "handoff", "question": "找客服，我要投诉", "expected_route": "handoff", "expected_sources": [], "ground_truth": "识别到投诉/转人工意图，应直接走 human_handoff 节点并给出 400 电话与响应时效。"}

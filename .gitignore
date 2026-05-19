@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+.env
+.chroma/
+eval/results/*.json
+eval/results/*.csv
+
+.DS_Store
+.idea/
+.vscode/
