@@ -177,7 +177,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 ---
 
-## 5. 实验复现（课程 / 答辩）
+## 5. 实验复现
 
 ### 5.1 四组消融
 
@@ -189,7 +189,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 | **E3 Full Agentic** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 - **E0**：`retrieve_node_plain`，仅 cosine top-k，无 rerank —— 作为真·朴素基线。  
-- **E1+**：`retrieve_and_rerank`，每档相对上一档为**单一增量**，便于报告归因。
+- **E1+**：`retrieve_and_rerank`，每档相对上一档为**单一增量**
 
 ### 5.2 测试集（`eval/testset.jsonl`）
 
@@ -262,27 +262,9 @@ python -m eval.run_eval --all
 | E2 +改写 | 0.969 | 1.000 | 0.944 | 1.000 | 0.838 | — | ~11.9s |
 | E3 Full | 0.969 | 1.000 | 0.889 | 1.000 | 0.796 | 0.544 | ~12.4s |
 
-**可写进报告的结论示例**：
-
-- 路由 + 工具：E0→E1 路由准确率 **0.56→0.97**，工具 F1 **0→1**（朴素 RAG 无法查订单）。  
-- 检索：Hit@5 **0.89→1.00**（rerank + 改写）。  
-- 代价：p50 延迟约 **翻倍**（多轮 LLM + grade/reflect）。  
-- handoff：E1+ 对「我要转人工」**2/2** 命中；E0 无 router 会误走 kb。
-
 ---
 
-## 6. 课程报告建议结构
-
-1. **引言**：朴素 RAG 局限（一次检索、无路由/工具、难多跳）  
-2. **方法**：架构图 + 四路由 + RAG 流水线（ingestion / retrieval）  
-3. **实现**：LangGraph 条件边、`AgentConfig` 消融、`nodes.py` 关键片段  
-4. **实验**：32 条测试集 + `comparison.md` 表 + `case_study.md` 2–3 例  
-5. **讨论**：准确率 vs 延迟；RAGAS + GLM 局限性；reflect 非单调收益  
-6. **结论与未来工作**：cross-encoder rerank、BM25 混合检索、多轮对话记忆、真实工单对接  
-
----
-
-## 7. 常见问题
+## 6. 常见问题
 
 **API / 配置**
 
@@ -310,6 +292,6 @@ python -m eval.run_eval --all
 
 ---
 
-## 8. 许可
+## 7. 许可
 
 仅用于课程学习与演示。
