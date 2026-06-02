@@ -1,0 +1,11 @@
+doc_id: SCRIPT_PRESALES
+doc_type: script
+title: 优惠券与活动话术
+category: presales
+business_stage: 售前咨询
+version: v2026.06
+visibility: customer_safe
+priority: 70
+normal: 优惠券是否可用要看有效期、适用品类、门槛金额和结算页展示。
+missing_info: 麻烦您提供优惠券名称、商品链接和结算页截图，我帮您排查原因。
+handoff: 如果页面活动规则互相冲突，需要人工核实最终适用规则。

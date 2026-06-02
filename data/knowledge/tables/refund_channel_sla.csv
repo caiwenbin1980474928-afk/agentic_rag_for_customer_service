@@ -1,0 +1,6 @@
+channel,refund_type,expected_sla,customer_safe_note,requires_handoff
+微信支付,仅退款,1-3个工作日,审核通过后原路退回,false
+支付宝,退货退款,3-5个工作日,仓库签收并质检通过后原路退回,false
+银行卡,退款,3-7个工作日,以银行入账时间为准,false
+信用卡,退款,7-15天,账单日可能影响展示时间,false
+原路退回失败,退款,人工处理,需补充收款信息或等待专员核实,true

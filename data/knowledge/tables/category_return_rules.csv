@@ -1,0 +1,6 @@
+category,support_7days,quality_issue_supported,required_condition,handoff_if
+耳机,true,true,包装配件齐全且不影响二次销售,质量争议或人为损坏
+食品生鲜,false,true,质量问题需提供照片和签收时间,冷链延误或食品安全问题
+定制商品,false,true,以定制页说明为准,用户争议或页面说明冲突
+虚拟商品,false,limited,未激活前按商品页规则,激活状态争议
+家电,true,true,需核对安装、外观和序列号,高价值或安装争议

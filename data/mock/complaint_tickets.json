@@ -1,0 +1,182 @@
+[
+  {
+    "ticket_id": "C5001",
+    "order_id": "A1009",
+    "type": "物流延误",
+    "status": "专员处理中",
+    "priority": "P2",
+    "created_at": "2026-05-02 18:03",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5002",
+    "order_id": "A1018",
+    "type": "售后争议",
+    "status": "等待用户确认",
+    "priority": "P2",
+    "created_at": "2026-05-03 18:06",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5003",
+    "order_id": "A1027",
+    "type": "价格争议",
+    "status": "已补偿",
+    "priority": "P1",
+    "created_at": "2026-05-04 18:09",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5004",
+    "order_id": "A1036",
+    "type": "高价值订单",
+    "status": "已关闭",
+    "priority": "P2",
+    "created_at": "2026-05-05 18:12",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5005",
+    "order_id": "A1045",
+    "type": "服务态度",
+    "status": "待受理",
+    "priority": "P2",
+    "created_at": "2026-05-06 18:15",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5006",
+    "order_id": "A1054",
+    "type": "物流延误",
+    "status": "专员处理中",
+    "priority": "P1",
+    "created_at": "2026-05-07 18:18",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5007",
+    "order_id": "A1063",
+    "type": "售后争议",
+    "status": "等待用户确认",
+    "priority": "P2",
+    "created_at": "2026-05-08 18:21",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5008",
+    "order_id": "A1072",
+    "type": "价格争议",
+    "status": "已补偿",
+    "priority": "P2",
+    "created_at": "2026-05-09 18:24",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5009",
+    "order_id": "A1081",
+    "type": "高价值订单",
+    "status": "已关闭",
+    "priority": "P1",
+    "created_at": "2026-05-10 18:27",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5010",
+    "order_id": "A1090",
+    "type": "服务态度",
+    "status": "待受理",
+    "priority": "P2",
+    "created_at": "2026-05-11 18:30",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5011",
+    "order_id": "A1099",
+    "type": "物流延误",
+    "status": "专员处理中",
+    "priority": "P2",
+    "created_at": "2026-05-12 18:33",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5012",
+    "order_id": "A1008",
+    "type": "售后争议",
+    "status": "等待用户确认",
+    "priority": "P1",
+    "created_at": "2026-05-13 18:36",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5013",
+    "order_id": "A1017",
+    "type": "价格争议",
+    "status": "已补偿",
+    "priority": "P2",
+    "created_at": "2026-05-14 18:39",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5014",
+    "order_id": "A1026",
+    "type": "高价值订单",
+    "status": "已关闭",
+    "priority": "P2",
+    "created_at": "2026-05-15 18:42",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5015",
+    "order_id": "A1035",
+    "type": "服务态度",
+    "status": "待受理",
+    "priority": "P1",
+    "created_at": "2026-05-16 18:45",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5016",
+    "order_id": "A1044",
+    "type": "物流延误",
+    "status": "专员处理中",
+    "priority": "P2",
+    "created_at": "2026-05-17 18:48",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5017",
+    "order_id": "A1053",
+    "type": "售后争议",
+    "status": "等待用户确认",
+    "priority": "P2",
+    "created_at": "2026-05-18 18:51",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5018",
+    "order_id": "A1062",
+    "type": "价格争议",
+    "status": "已补偿",
+    "priority": "P1",
+    "created_at": "2026-05-19 18:54",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5019",
+    "order_id": "A1071",
+    "type": "高价值订单",
+    "status": "已关闭",
+    "priority": "P2",
+    "created_at": "2026-05-20 18:57",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  },
+  {
+    "ticket_id": "C5020",
+    "order_id": "A1080",
+    "type": "服务态度",
+    "status": "待受理",
+    "priority": "P2",
+    "created_at": "2026-05-21 18:00",
+    "summary": "投诉工单需记录用户诉求、已沟通方案、期望补偿和最终处理结论。"
+  }
+]

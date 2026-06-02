@@ -1,0 +1,11 @@
+doc_id: SCRIPT_ORDER
+doc_type: script
+title: 订单异常话术
+category: order
+business_stage: 售中订单
+version: v2026.06
+visibility: customer_safe
+priority: 70
+normal: 订单处理需要看当前状态。未发货和已发货的可操作范围不一样。
+missing_info: 麻烦您提供订单号，我先核对支付、审核和发货状态。
+handoff: 这个订单涉及异常审核或资金问题，我会转人工为您进一步核实。

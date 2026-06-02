@@ -1,0 +1,11 @@
+doc_id: SCRIPT_AFTERSALES
+doc_type: script
+title: 退款与售后话术
+category: aftersales
+business_stage: 售后服务
+version: v2026.06
+visibility: customer_safe
+priority: 70
+normal: 您好，退款会在审核通过后按原支付路径退回，具体到账时间受支付渠道影响。
+missing_info: 麻烦您提供订单号、签收时间和问题凭证，我先帮您判断适用的售后路径。
+handoff: 这个情况涉及人工审核，我会为您转接专员继续处理。

@@ -17,20 +17,33 @@ from app.config import get_settings
 from app.ingestion.embedder import get_embeddings
 
 
+EMBED_BATCH_SIZE = 64
+
+
 def build_vectorstore(chunks: list[Document], rebuild: bool = False) -> Chroma:
-    """Embed ``chunks`` and persist them to the local Chroma directory."""
+    """Embed ``chunks`` and persist them to the local Chroma directory.
+
+    Some OpenAI-compatible embedding providers, including GLM ``embedding-3``,
+    cap batch input at 64 texts. Chroma's convenience ``from_documents`` may
+    send a larger batch, so we create the collection first and add documents in
+    provider-safe batches.
+    """
     settings = get_settings()
     chroma_path = Path(settings.chroma_dir)
 
     if rebuild and chroma_path.exists():
         shutil.rmtree(chroma_path)
 
-    return Chroma.from_documents(
-        documents=chunks,
-        embedding=get_embeddings(),
+    store = Chroma(
         collection_name=settings.collection_name,
+        embedding_function=get_embeddings(),
         persist_directory=str(chroma_path),
     )
+    for start in range(0, len(chunks), EMBED_BATCH_SIZE):
+        batch = chunks[start:start + EMBED_BATCH_SIZE]
+        ids = [f"chunk-{start + i:06d}" for i in range(len(batch))]
+        store.add_documents(batch, ids=ids)
+    return store
 
 
 def get_vectorstore() -> Chroma:

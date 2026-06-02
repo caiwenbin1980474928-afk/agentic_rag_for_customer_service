@@ -1,297 +1,434 @@
-# Agentic RAG · 客服 AI Demo
+# Agentic RAG · 电商客服 AI Demo
 
-一个体现 **Agentic RAG** 的电商客服聊天 AI：用 LangGraph 把「路由 / 多轮检索 / 查询改写 / 工具调用 / 自我反思 / 转人工」编排为状态图，右侧 UI 实时展示每一步决策。
+一个面向课程/答辩演示的 **Agentic RAG 客服系统**。
 
-**默认大模型：智谱 GLM**（`glm-4-flash` + `embedding-3`，走 OpenAI 兼容协议）。附带 **32 条**人工标注测试集与 **4 组消融实验**脚本，可直接复现。
+系统用 LangGraph 编排「路由、工具调用、受治理检索、证据打分、查询改写、答案反思、转人工」等节点，并在前端实时展示 agent 的每一步决策。知识库采用带 `doc_type`、业务阶段、治理边界和自动评测的客服知识资产设计。
+
+默认模型为智谱 GLM：
+
+- LLM：`glm-4-flash`
+- Embedding：`embedding-3`
+- API 协议：OpenAI-compatible
 
 ---
 
-## 1. 架构
+## 1. 系统能力
 
+系统包含以下能力：
+
+- 标准知识库数据包：143 个知识资产文件，索引后 502 个 chunks
+- 覆盖售前、售中、售后、物流、发票、投诉、安全边界、工具说明
+- 业务结构感知 chunker
+- `doc_type` 感知检索与 rerank
+- safety 文档前置，控制安全类问题的回答边界
+- 生成上下文按 `doc_type` 分区
+- 5 类 mock 业务工具：订单、物流工单、售后工单、发票工单、投诉工单
+- governed 检索评测集：30 条
+- agentic showcase 问题池：80 条
+- E0/E1/E2/E3 四组消融对比
+- 前端 demo 支持快捷场景和右侧 agent 时间线
+
+评测快照：
+
+```json
+{
+  "agentic_showcase": {
+    "n_cases": 11,
+    "n_errors": 0,
+    "distinguishing_rate": 1.0,
+    "error_rate": 0.0
+  },
+  "governed_retrieval": {
+    "n": 30,
+    "pass_rate": 1.0,
+    "doc_type_hit": 1.0,
+    "top_doc_type_hit": 1.0
+  }
+}
 ```
-┌──── 用户 ────┐
-       ▼
-   router ──┬──► handoff ─────────────────────────────► END（转人工话术）
-            ├──► tool ────────┐
-            ├──► chitchat ────┼──► generate ──► reflect? ──► END
-            └──► retrieve ──► grade ──► rewrite ──► retrieve …
-                     │              │
-                     └──── generate ◄┘
-                              │
-                    (grade 全否 & 重试用尽)
-                              ▼
-                          handoff ──► END
+
+---
+
+## 2. 系统架构
+
+```text
+用户问题
+  |
+  v
+router
+  |-- handoff -----------------------> human_handoff -> END
+  |-- chitchat ----------------------> generate -> END
+  |-- tool --------------------------> tool_call -> generate -> reflect? -> END
+  |
+  '-- kb ----------------------------> retrieve -> grade_docs -> generate -> reflect? -> END
+                                      ^             |
+                                      |             |
+                                      '--- rewrite_query
 ```
 
-### 1.1 路由（四选一）
+### 四种实验配置
 
-| route | 触发场景 | 后续节点 |
+| 版本 | 名称 | 能力 |
 | --- | --- | --- |
-| `kb` | 退换货、配送、发票、会员、故障判定等业务问题 | retrieve → grade → … → generate |
-| `tool` | 含订单号（如 A1001）的物流/订单查询 | tool_call → generate |
-| `chitchat` | 闲聊、业务范围外问题（如问 CEO、天气） | generate（自然口吻，不强制引用资料） |
-| `handoff` | 主动要求转人工 / 投诉升级 | handoff（400 电话 + 3 分钟响应承诺） |
+| E0 | Naive RAG | 纯向量检索 + 生成，不路由、不工具、不 rerank |
+| E1 | Router + Tools | 路由、工具调用、受治理检索、转人工 |
+| E2 | Self-RAG 检索修正 | E1 + 证据打分 + 查询改写 |
+| E3 | Full Agentic | E2 + 答案反思 |
 
-### 1.2 Agent 节点
+### Router 设计
 
-| 节点 | 作用 |
+router 采用 LLM 路由与本地确定性规则结合的设计。高风险和高确定性意图优先由本地规则处理：
+
+- 完整编号：`A1007`、`L2003`、`S3008`、`F4009`、`C5012` 直接进入工具
+- 不完整编号：`订单A`、`物流工单L` 不补全，进入工具后返回缺少完整编号
+- 转人工/投诉/主管：直接 `handoff`
+- 安全越权：如“没有凭证也帮我通过审核”“编一个物流状态”“保证今天到账”，直接进入 safety/KB
+
+这类规则用于约束两个关键边界：
+
+- 不完整编号不触发样例编号补全
+- safety 问题不被“售后/物流”等业务关键词误导到工具链
+
+---
+
+## 3. 知识库形态
+
+知识库位于 [data/knowledge](data/knowledge)，采用 **governed customer-service knowledge base** 设计。
+
+### 3.1 知识资产类型
+
+| 目录 | doc_type | 数量 | 用途 |
+| --- | --- | ---: | --- |
+| `policies/` | `policy` | 120 | 对外可用政策依据，覆盖售前/售中/物流/售后 |
+| `sop/` | `sop` | 4 | 内部流程，如售中异常、物流异常、售后争议、投诉处理 |
+| `scripts/` | `script` | 4 | 客服话术参考，不作为安全承诺依据 |
+| `tables/` | `table` | 4 | 退款周期、物流 SLA、材料清单等结构化规则 |
+| `tool_specs/` | `tool_spec` | 5 | 订单/工单查询工具契约 |
+| `safety/` | `safety` | 4 | 承诺边界、隐私、风控、强制转人工 |
+| `changelog/` | `changelog` | 1 | 版本与生效记录 |
+
+### 3.2 元数据治理
+
+核心文档带有 front matter 元数据：
+
+```yaml
+doc_id: POL-AFTERSALES-026
+doc_type: policy
+category: aftersales
+business_stage: aftersales
+version: v2026.05
+effective_from: 2026-05-01
+owner: customer-service-ops
+auditor: governance-team
+visibility: customer_safe
+priority: 80
+```
+
+这些字段会进入 chunk metadata，用于：
+
+- 检索过滤
+- rerank 加权
+- 生成上下文排序
+- citation 展示
+- 自动评测
+- 答辩时解释“为什么召回这类文档”
+
+### 3.3 业务结构感知 chunker
+
+chunker 根据业务文档结构切分：
+
+- 按 markdown 标题识别章节
+- 保留 `doc_type`、`category`、`business_stage` 等治理元数据
+- 识别 `chunk_type`：`overview`、`procedure`、`requirements`、`escalation`、`reference`
+- 对 SOP、材料要求、升级条件、工具说明等内容保持结构完整
+- 对超长段落再做有限递归切分，控制 embedding 输入长度
+
+索引路径：
+
+```text
+loader -> business-aware chunker -> embedding-3 -> Chroma
+```
+
+Chroma collection 中有 502 个 chunks。
+
+### 3.4 doc_type 感知检索/rerank
+
+检索流程位于 [app/retrieval](app/retrieval)：
+
+```text
+query
+  -> retrieve_with_scores
+  -> supplemental_candidates
+  -> rerank
+  -> safety frontload
+  -> top-k docs
+```
+
+关键策略：
+
+- 安全类问题优先召回 `safety`
+- 流程类问题优先召回 `sop`
+- 材料/条件类问题优先召回 `requirements`
+- 表格/时效/费用类问题优先召回 `table`
+- 实时状态类问题优先走工具，不让普通 policy 编造状态
+- 投诉/主管/人工诉求优先 `handoff`
+
+生成上下文会按 doc_type 分区，并强制 safety 在前：
+
+```text
+【安全边界】
+...
+
+【工具说明】
+...
+
+【SOP流程】
+...
+
+【结构化规则表】
+...
+
+【政策依据】
+...
+
+【客服话术】
+...
+```
+
+这使系统能回答“能做什么”，也能回答“不能承诺什么”。
+
+---
+
+## 4. 工具与 mock 数据
+
+mock 业务数据位于 [data/mock](data/mock)：
+
+| 文件 | 工具 |
 | --- | --- |
-| **router** | 意图分类（kb / tool / chitchat / handoff） |
-| **retrieve** | 向量召回；E1+ 经 `pipeline.retrieve_and_rerank`（去重 + 来源多样性），E0 为纯 cosine top-k |
-| **grade_docs** | 对每个片段做 yes/no 相关性判断（Self-RAG 风格） |
-| **rewrite_query** | LLM 改写查询，进入下一轮检索 |
-| **tool_call** | 调用 `mock_order_lookup`（示例订单 A1001–A1004） |
-| **generate** | 基于资料 / 工具结果生成回答（SSE 流式） |
-| **reflect** | 判断答案是否忠于资料；不通过可回到 rewrite |
-| **human_handoff** | 用户主动转人工，或检索/打分多轮失败后兜底 |
+| `orders.json` | `mock_order_lookup` |
+| `logistics_tickets.json` | `mock_logistics_ticket_lookup` |
+| `after_sales_tickets.json` | `mock_after_sales_ticket_lookup` |
+| `invoice_tickets.json` | `mock_invoice_ticket_lookup` |
+| `complaint_tickets.json` | `mock_complaint_ticket_lookup` |
 
-### 1.3 RAG 索引与检索（显式分层）
+编号规则：
 
-**索引（`app/ingestion/`）**
+- 订单：`A1001` 这类 A 开头编号
+- 物流工单：`L2003` 这类 L 开头编号
+- 售后工单：`S3008` 这类 S 开头编号
+- 发票工单：`F4009` 这类 F 开头编号
+- 投诉工单：`C5012` 这类 C 开头编号
 
-```
-loader → chunker → embedder → vectorstore
-  │         │          │            │
-  读 md    两段切块   embedding-3   Chroma 持久化
-```
-
-- **chunker**：Markdown 标题切分 + 递归字符切分（默认 400 字 / 60 重叠）
-- **embedder**：智谱 `embedding-3`（2048 维），工厂在 `embedder.py`
-
-**检索（`app/retrieval/`）**
-
-```
-query → retriever (Chroma similarity) → reranker → top-k
-```
-
-- **reranker**：去重 + 同来源惩罚（可替换为 cross-encoder，见 FAQ）
-- **query_rewriter**：agent 内 rewrite 节点调用，与检索层解耦
+工具层会拒绝不完整编号。例如用户说“我需要看订单A”，系统会提示需要完整订单号或工单号。
 
 ---
 
-## 2. 目录
+## 5. 目录结构
 
-```
-agentic-rag/
-├── README.md
-├── requirements.txt
-├── .env.example
-├── data/sample_docs/          5 份示例客服 markdown
+```text
+.
 ├── app/
-│   ├── main.py                FastAPI 入口（启动时校验 API Key）
-│   ├── config.py              配置（读 .env，get_settings 不缓存）
-│   ├── ingestion/
-│   │   ├── loader.py          ① 加载 .md / .txt
-│   │   ├── chunker.py         ② 切块
-│   │   ├── embedder.py        ③ Embedding 工厂（默认 GLM embedding-3）
-│   │   ├── vectorstore.py     ④ Chroma 读写
-│   │   └── indexer.py         build_index() 编排
-│   ├── retrieval/
-│   │   ├── retriever.py       similarity_search_with_score
-│   │   ├── reranker.py        去重 + 多样性重排
-│   │   ├── query_rewriter.py  查询改写 prompt + LLM
-│   │   └── pipeline.py        retrieve_and_rerank()
 │   ├── agent/
-│   │   ├── graph.py           LangGraph 编译 + 4 组 AgentConfig
-│   │   ├── nodes.py           各节点实现
-│   │   ├── state.py           GraphState / Route 类型
-│   │   ├── prompts.py         各节点 system prompt
-│   │   └── tools.py           mock_order_lookup + 转人工话术
-│   ├── api/chat.py            SSE 流式 /api/chat
-│   └── ui/index.html          单页对话 + Agent 时间线
-├── scripts/ingest.py          构建索引（默认 wipe & rebuild）
-└── eval/
-    ├── testset.jsonl          32 条标注（含 handoff / refuse / chitchat）
-    ├── metrics.py             路由 / Hit@k / MRR / 延迟
-    ├── ragas_eval.py          RAGAS 生成质量（可选）
-    ├── run_eval.py            跑 4 组消融
-    ├── compare.py             生成 comparison.md / case_study.md
-    └── results/               实验输出（gitignore *.json）
+│   │   ├── graph.py           LangGraph 编排与 E0/E1/E2/E3 配置
+│   │   ├── nodes.py           router/retrieve/tool/generate/reflect 等节点
+│   │   ├── prompts.py         各节点 prompt
+│   │   ├── state.py           GraphState
+│   │   └── tools.py           mock 工具与转人工话术
+│   ├── api/chat.py            SSE 流式聊天接口
+│   ├── ingestion/
+│   │   ├── loader.py          读取 governed knowledge assets
+│   │   ├── chunker.py         业务结构感知 chunker
+│   │   ├── embedder.py        embedding 工厂
+│   │   ├── vectorstore.py     Chroma 写入/读取
+│   │   └── indexer.py         build_index()
+│   ├── retrieval/
+│   │   ├── retriever.py       Chroma similarity search
+│   │   ├── reranker.py        doc_type-aware rerank
+│   │   ├── pipeline.py        retrieve_and_rerank()
+│   │   └── query_rewriter.py  查询改写
+│   ├── ui/index.html          前端 demo
+│   └── main.py                FastAPI 入口
+├── data/
+│   ├── knowledge/             governed 知识库
+│   └── mock/                  mock 订单/工单数据
+├── eval/
+│   ├── testset_governed.jsonl             governed 检索评测集
+│   ├── testset_agentic_showcase.jsonl     80 题展示问题池
+│   ├── run_governed_retrieval_eval.py     检索治理评测
+│   ├── build_agentic_showcase_testset.py  生成 showcase 问题池
+│   ├── run_agentic_showcase_eval.py       E0/E1/E2/E3 showcase 对比
+│   └── results/
+├── scripts/
+│   ├── generate_knowledge_assets.py
+│   ├── generate_standard_data.py
+│   └── ingest.py
+├── README.md
+└── requirements.txt
 ```
 
 ---
 
-## 3. 快速开始
+## 6. 快速开始
 
-### 3.1 环境
-
-需要 **Python 3.10+**（已在 3.14 上验证）。
+### 6.1 安装依赖
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3.2 配置 `.env`
+### 6.2 配置环境变量
 
 ```bash
 cp .env.example .env
-# 填入智谱 API Key（变量名仍为 OPENAI_API_KEY，兼容 langchain_openai）
 ```
+
+关键变量：
 
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | （必填） | 智谱控制台 Key |
-| `OPENAI_BASE_URL` | `https://open.bigmodel.cn/api/paas/v4/` | 可换 OpenAI / DeepSeek 等兼容端点 |
+| `OPENAI_API_KEY` | 必填 | 智谱或其他兼容服务 API Key |
+| `OPENAI_BASE_URL` | `https://open.bigmodel.cn/api/paas/v4/` | OpenAI-compatible endpoint |
 | `LLM_MODEL` | `glm-4-flash` | 对话模型 |
-| `EMBED_MODEL` | `embedding-3` | 嵌入模型（2048 维） |
-| `TOP_K` | `4` | 检索条数 |
-| `MAX_RETRIES` | `3` | grade 失败后的最大改写轮次（demo 可改为 `1` 加快兜底转人工） |
+| `EMBED_MODEL` | `embedding-3` | 嵌入模型 |
+| `DOCS_DIR` | `./data/knowledge` | governed 知识库目录 |
+| `TOP_K` | `4` | 最终上下文条数 |
+| `MAX_RETRIES` | `3` | grade 失败后的 rewrite 轮数 |
 
-换回 OpenAI / DeepSeek：只改上述 4 个 API 相关变量，代码无需改动。
-
-### 3.3 构建知识库
+### 6.3 构建索引
 
 ```bash
 python -m scripts.ingest
 ```
 
-默认 **清空后重建**（`rebuild=True`），避免 Chroma `from_documents` 追加导致 chunk 翻倍。  
-若确需追加（高级）：`python -m scripts.ingest --no-rebuild`。
+默认会重建 Chroma 索引，防止重复追加 chunk。
 
-### 3.4 启动
+### 6.4 启动服务
 
 ```bash
-# 建议在项目根目录、已 activate .venv 后：
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-浏览器打开 [http://localhost:8000](http://localhost:8000)。  
-顶栏可切换 **E0 / E1 / E2 / E3** 四种 agent 配置；**清空对话** 后再换变体对比更公平。
+打开：
+
+[http://localhost:8000](http://localhost:8000)
 
 ---
 
-## 4. 演示脚本
+## 7. 推荐演示问题
 
-观察**右侧 Agent 思考过程**：
-
-| # | 问题 | 预期路径 | 看点 |
-| --- | --- | --- | --- |
-| 1 | 你们的退货政策是什么？ | kb → retrieve → grade → generate → reflect | 单跳 + 引用 |
-| 2 | 我的订单 A1001 现在到哪了？ | tool → tool_call → generate | 不调 KB，走订单 mock |
-| 3 | 我买的耳机突然没声音了，能退吗？ | kb → retrieve → grade → rewrite → retrieve → … | 多轮改写补检索 |
-| 4 | 我要转人工 | handoff | 直接转人工话术 + 右栏 `human_handoff` 步骤 |
-
-同一问题在 **E0 vs E3** 下对比：E0 无 router（订单题也会硬检索）、无 grade/rewrite/reflect；E3 步骤最多、延迟最高。
-
----
-
-## 5. 实验复现
-
-### 5.1 四组消融
-
-| 实验组 | router | rerank | grade | rewrite | reflect | tools |
-| --- | :-: | :-: | :-: | :-: | :-: | :-: |
-| **E0 Naive RAG** | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| **E1 +路由+工具** | ✓ | ✓ | ✗ | ✗ | ✗ | ✓ |
-| **E2 +查询改写** | ✓ | ✓ | ✓ | ✓ | ✗ | ✓ |
-| **E3 Full Agentic** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-
-- **E0**：`retrieve_node_plain`，仅 cosine top-k，无 rerank —— 作为真·朴素基线。  
-- **E1+**：`retrieve_and_rerank`，每档相对上一档为**单一增量**
-
-### 5.2 测试集（`eval/testset.jsonl`）
-
-共 **32 条**，类别包括：
-
-| category | 条数 | 说明 |
+| 场景 | 问题 | 预期差异 |
 | --- | --- | --- |
-| single-hop | 10 | 单文档问答 |
-| multi-hop | 8 | 需多文档综合 |
-| tool | 6 | 订单查询 |
-| refuse | 4 | 业务范围外 → 期望 `chitchat` |
-| chitchat | 2 | 寒暄 |
-| handoff | 2 | 主动转人工 |
+| 工具调用 | `我的订单 A1007 现在是什么状态？` | E0 只能检索，E1+ 调订单工具 |
+| 缺编号 | `我需要看订单A` | 不补全为 A1001，提示需要完整编号 |
+| 物流工单 | `L2008 的物流停滞有反馈了吗？` | E1+ 调物流工单工具 |
+| 投诉升级 | `我要投诉，找你们主管` | E1+ 直接 handoff |
+| 安全边界 | `退款一定能今天到账吗？你能保证吗？` | safety 前置，拒绝承诺 |
+| 越权审核 | `没有凭证你也帮我通过售后审核吧` | 走 safety/KB，不进工具链 |
+| SOP 流程 | `售后质检争议处理流程是什么？` | 召回 SOP，E2+ 有证据打分 |
+| 材料凭证 | `退货需要提供什么材料？` | requirements chunk 靠前 |
+| 结构化表 | `信用卡退款周期是多久？` | table 优先于普通 policy |
+| 风控边界 | `风控拦截的具体规则能告诉我吗？` | 拒绝泄露内部命中规则 |
 
-### 5.3 跑实验
+---
+
+## 8. 评测
+
+### 8.1 Governed 检索评测
+
+用于验证 `doc_type`、`category`、`chunk_type`、工具契约是否被正确召回。
 
 ```bash
-# 推荐：先跑路由/检索/延迟（约 15–25 分钟，32 条 × 4 组）
-python -m eval.run_eval --all --no-ragas
-
-# 生成对比表 + 案例分析
-python -m eval.compare
-
-# 可选：仅对已有 full.json 补 RAGAS（约 6–7 分钟，不重跑 graph）
-python -c "
-import json
-from pathlib import Path
-from eval.ragas_eval import run_ragas
-p = Path('eval/results/full.json')
-d = json.loads(p.read_text(encoding='utf-8'))
-d['metrics']['ragas'] = run_ragas(d['records'])
-p.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding='utf-8')
-print(d['metrics']['ragas'])
-"
-python -m eval.compare
-
-# 或一次性跑满（含 RAGAS，耗时会显著增加）
-python -m eval.run_eval --all
+python -m eval.run_governed_retrieval_eval
 ```
 
 产物：
 
-- `eval/results/<variant>.json` — 每条 query 的完整 record  
-- `eval/results/comparison.md` / `.csv` — 四组指标表  
-- `eval/results/case_study.md` — E0 错 / E3 对的典型案例  
+- [eval/results/governed_retrieval.json](eval/results/governed_retrieval.json)
+- [eval/results/governed_retrieval.md](eval/results/governed_retrieval.md)
 
-### 5.4 指标说明
+参考结果：
 
-| 指标 | 含义 | 越好 |
-| --- | --- | --- |
-| 路由准确率 | `actual_route` 是否等于 `expected_route`（含 handoff） | ↑ |
-| 工具 F1 | 该调工具时是否真调了 `tool_call` | ↑ |
-| Hit@3 / Hit@5 | 至少一个标准来源出现在 Top-K（per-query 0/1） | ↑ |
-| MRR | 标准来源的平均倒数排名 | ↑ |
-| Faithfulness (RAGAS) | 答案是否忠于检索上下文 | ↑ |
-| Answer Relevancy | 答案是否切题 | ↑ |
-| Context Precision | 检索上下文是否相关 | ↑ |
-| 延迟 p50 / p95 | 端到端耗时（ms） | ↓ |
+```json
+{
+  "n": 30,
+  "pass_rate": 1.0,
+  "doc_type_hit": 1.0,
+  "category_hit": 1.0,
+  "chunk_type_hit": 1.0,
+  "top_doc_type_hit": 1.0
+}
+```
 
-> RAGAS 会跳过 `chitchat` / `refuse` / `handoff`（无稳定 reference/context）。使用 GLM 时可能出现 “LLM returned 1 generations instead of requested 3”，绝对值偏低属已知限制，宜作**同评估器下的相对比较**或仅报告 E3 一档。
+### 8.2 Agentic showcase 对比
 
-### 5.5 参考结果（本机一次 `--no-ragas` + E3 RAGAS）
+用于让 E0/E1/E2/E3 显示出差异。
 
-以下为仓库内一次完整跑通的快照，**换模型/API 后数值会变化**，以你本地 `comparison.md` 为准：
+```bash
+python -m eval.run_agentic_showcase_eval --sample-per-category 1 --timeout-s 60
+```
 
-| 实验组 | 路由准确率 | 工具 F1 | Hit@3 | Hit@5 | MRR | Faithfulness | p50 延迟 |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| E0 Naive | 0.562 | 0.000 | 0.833 | 0.889 | 0.782 | — | ~5.4s |
-| E1 +路由+工具 | 0.969 | 1.000 | 0.944 | 0.944 | 0.815 | — | ~6.0s |
-| E2 +改写 | 0.969 | 1.000 | 0.944 | 1.000 | 0.838 | — | ~11.9s |
-| E3 Full | 0.969 | 1.000 | 0.889 | 1.000 | 0.796 | 0.544 | ~12.4s |
+跑完整 80 题：
 
----
+```bash
+python -m eval.run_agentic_showcase_eval --timeout-s 60
+```
 
-## 6. 常见问题
+产物：
 
-**API / 配置**
+- [eval/results/agentic_showcase.json](eval/results/agentic_showcase.json)
+- [eval/results/agentic_showcase.md](eval/results/agentic_showcase.md)
 
-- **`OPENAI_API_KEY` 未设置**：启动即报错（`main.py` fail-fast）；检查 `.env`。  
-- **改 `.env` 后行为没变**：`get_graph()` 有编译缓存；开发时可 `from app.agent.graph import clear_graph_cache; clear_graph_cache()` 后重试。`get_settings()` 每次新建，**无需**为改 Key 清缓存。  
-- **GLM 结构化输出**：router/grade/reflect 使用手写 JSON/yes-no 解析（`nodes.py`），未依赖 `with_structured_output`。
+评测会记录：
 
-**索引 / 检索**
-
-- **重复 ingest 导致检索变差**：勿多次无 `--rebuild` 追加；默认 `scripts.ingest` 已 wipe。  
-- **换嵌入模型**：改 `EMBED_MODEL` 后必须 `python -m scripts.ingest` 全量重建。  
-- **换本地中文嵌入**：改 `app/ingestion/embedder.py` 为 `HuggingFaceEmbeddings`，并 `pip install sentence-transformers`。  
-- **换 reranker**：只改 `app/retrieval/reranker.py` 的 `rerank()`。  
-- **改切块**：改 `app/ingestion/chunker.py` 的 `DEFAULT_CHUNK_SIZE` 等。
-
-**UI / 演示**
-
-- **页面无响应、右侧无步骤**：硬刷新（Cmd+Shift+R）或无痕窗口；确认 `uvicorn` 在 `.venv` 内启动。  
-- **业务范围外问题很僵**：应走 `chitchat` 或主动 `handoff`；若仍长时间思考，将 `.env` 中 `MAX_RETRIES=1` 加快失败兜底。  
-- **演示时 agent 太慢**：顶栏用 E1/E2 或 `MAX_RETRIES=1`；评测完整 agent 再用 E3 + `MAX_RETRIES=3`。
-
-**观测**
-
-- **LangSmith**：在 `.env` 开启 `LANGCHAIN_TRACING_V2` 等变量，见 [smith.langchain.com](https://smith.langchain.com)。
+- route
+- steps
+- 是否调用工具
+- 工具是否成功
+- top knowledge
+- answer preview
+- latency
+- 是否出现错误/超时
 
 ---
 
-## 7. 许可
+## 9. 常见问题
 
-仅用于课程学习与演示。
+**为什么叫 Agentic RAG？**
+
+Agentic RAG 的核心是显式决策链：
+
+- 先判断是否应该检索、查工具、闲聊或转人工
+- 实时状态问题走工具，不让知识库编造
+- 检索结果可被打分，不足时可改写查询
+- 生成后可做忠实度反思
+- 投诉/主管/强风险问题可直接转人工
+
+**为什么 safety 要前置？**
+
+客服知识库里很多 policy 会告诉你“流程怎么做”，但安全边界决定“哪些话不能说”。例如退款到账、赔付承诺、风控细节、隐私信息，这些问题必须先看 safety，再看普通政策。
+
+**为什么不能只用客服话术？**
+
+话术适合表达方式，不适合作为事实和合规依据。检索排序优先使用 `safety`、`sop`、`table`、`policy` 等更强依据，`script` 作为表达参考。
+
+**为什么 E2/E3 有时回答和 E1 接近？**
+
+最终话术可能接近，但中间链路不同：
+
+- E1：router + retrieve/tool + generate
+- E2：多了 `grade_docs` 和必要时的 `rewrite_query`
+- E3：多了 `reflect`
+
+答辩时应展示右侧步骤、top knowledge 和评测报告，不能只看最终句子是否相似。
+
+**为什么有些 SOP 问题比较慢？**
+
+SOP/流程问题通常要检索、生成较长答案；E2/E3 还会多做证据打分和反思。演示时可优先使用 E1 展示速度，用 E3 展示完整 agentic 能力。
+
+---
+
+## 10. 许可
+
+仅用于课程学习、答辩演示和技术研究。

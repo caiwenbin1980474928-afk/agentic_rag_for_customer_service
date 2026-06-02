@@ -1,0 +1,30 @@
+{"id":"gov_001","question":"退款一定能到账吗，可以承诺今天到账吗？","expected_doc_types":["safety"],"expected_categories":["safety"],"expected_titles":["客服回答承诺边界"],"expected_top_doc_type":"safety","notes":"安全承诺边界应优先于普通退款政策"}
+{"id":"gov_002","question":"客服能不能保证包裹今天一定送到？","expected_doc_types":["safety"],"expected_categories":["safety"],"expected_titles":["客服回答承诺边界"],"expected_top_doc_type":"safety"}
+{"id":"gov_003","question":"风控拦截能告诉用户具体命中规则吗？","expected_doc_types":["safety"],"expected_categories":["safety"],"expected_titles":["风控与异常账号边界"],"expected_top_doc_type":"safety"}
+{"id":"gov_004","question":"用户要改手机号，需要注意什么隐私边界？","expected_doc_types":["safety"],"expected_categories":["safety"],"expected_titles":["隐私与身份核验边界"],"expected_top_doc_type":"safety"}
+{"id":"gov_005","question":"用户明确要求投诉和找主管时怎么处理？","expected_doc_types":["safety"],"expected_titles":["必须转人工规则"],"expected_top_doc_type":"safety"}
+{"id":"gov_006","question":"售后质检争议处理流程是什么？","expected_doc_types":["sop"],"expected_categories":["aftersales"],"expected_titles":["售后争议与人工复核 SOP"],"expected_top_doc_type":"sop"}
+{"id":"gov_007","question":"物流停滞超过四十八小时怎么办，处理流程是什么？","expected_doc_types":["sop","policy"],"expected_categories":["logistics"],"expected_titles":["物流异常工单处理 SOP","物流停滞超过四十八小时处理"],"expected_top_doc_type":"sop"}
+{"id":"gov_008","question":"订单重复扣款处理流程是什么？","expected_doc_types":["sop","policy"],"expected_categories":["order"],"expected_titles":["售中订单异常处理 SOP","重复扣款处理规则"],"expected_top_doc_type":"sop"}
+{"id":"gov_009","question":"企业采购特殊折扣应该按什么流程处理？","expected_doc_types":["sop","policy"],"expected_categories":["presales"],"expected_titles":["售前咨询统一处理 SOP","企业采购售前咨询"],"expected_top_doc_type":"sop"}
+{"id":"gov_010","question":"客服应该怎么回复物流停滞？","expected_doc_types":["script"],"expected_categories":["logistics"],"expected_titles":["物流异常话术"],"expected_top_doc_type":"script"}
+{"id":"gov_011","question":"退款问题客服怎么说比较稳妥？","expected_doc_types":["script","safety"],"expected_categories":["aftersales"],"expected_titles":["退款与售后话术","客服回答承诺边界"],"expected_top_doc_type":"script"}
+{"id":"gov_012","question":"优惠券不能用时客服怎么回复？","expected_doc_types":["script"],"expected_categories":["presales"],"expected_titles":["优惠券与活动话术"],"expected_top_doc_type":"script"}
+{"id":"gov_013","question":"信用卡退款周期是多久？","expected_doc_types":["table","policy"],"expected_categories":["aftersales","tables"],"expected_titles":["refund_channel_sla","信用卡退款周期说明"]}
+{"id":"gov_014","question":"食品生鲜支持七天无理由吗？","expected_doc_types":["table","policy"],"expected_categories":["aftersales","tables"],"expected_titles":["category_return_rules","食品生鲜售后规则"]}
+{"id":"gov_015","question":"偏远地区物流一般多久，要不要附加费？","expected_doc_types":["table","policy"],"expected_categories":["logistics","tables"],"expected_titles":["logistics_sla_by_region","偏远地区配送规则","偏远地区附加费说明"]}
+{"id":"gov_016","question":"投诉工单默认优先级和响应时效是什么？","expected_doc_types":["table","policy"],"expected_categories":["tables"],"expected_titles":["ticket_priority_rules"]}
+{"id":"gov_017","question":"订单 A1007 要查什么工具？","expected_route":"tool","expected_tool":"mock_order_lookup","expected_lookup_id":"A1007","expected_doc_types":["tool_spec"],"expected_titles":["订单查询工具"],"expected_top_doc_type":"tool_spec"}
+{"id":"gov_018","question":"物流工单 L2003 要查什么工具？","expected_route":"tool","expected_tool":"mock_logistics_ticket_lookup","expected_lookup_id":"L2003","expected_doc_types":["tool_spec"],"expected_titles":["物流工单查询工具"],"expected_top_doc_type":"tool_spec"}
+{"id":"gov_019","question":"售后工单 S3008 为什么还没退款，应该查哪个工具？","expected_route":"tool","expected_tool":"mock_after_sales_ticket_lookup","expected_lookup_id":"S3008","expected_doc_types":["tool_spec"],"expected_titles":["售后工单查询工具"],"expected_top_doc_type":"tool_spec"}
+{"id":"gov_020","question":"发票工单 F4009 现在什么状态？","expected_route":"tool","expected_tool":"mock_invoice_ticket_lookup","expected_lookup_id":"F4009","expected_doc_types":["tool_spec"],"expected_titles":["发票工单查询工具"],"expected_top_doc_type":"tool_spec"}
+{"id":"gov_021","question":"投诉工单 C5012 有没有专员处理？","expected_route":"tool","expected_tool":"mock_complaint_ticket_lookup","expected_lookup_id":"C5012","expected_doc_types":["tool_spec"],"expected_titles":["投诉工单查询工具"],"expected_top_doc_type":"tool_spec"}
+{"id":"gov_022","question":"退货需要提供什么材料？","expected_doc_types":["policy"],"expected_categories":["aftersales"],"expected_chunk_types":["requirements"],"expected_titles":["退货退款申请处理流程","售后凭证要求"]}
+{"id":"gov_023","question":"包裹破损必须转人工吗？","expected_doc_types":["policy"],"expected_categories":["logistics"],"expected_chunk_types":["escalation"],"expected_titles":["包裹破损处理流程","物流人工升级与紧急工单"]}
+{"id":"gov_024","question":"七天无理由退货的适用条件是什么？","expected_doc_types":["policy"],"expected_categories":["aftersales"],"expected_titles":["七天无理由退货规则"],"expected_chunk_types":["overview","requirements"]}
+{"id":"gov_025","question":"优惠券为什么不能用？","expected_doc_types":["policy"],"expected_categories":["presales","order"],"expected_titles":["优惠券不可用原因排查","优惠券未生效处理"]}
+{"id":"gov_026","question":"订单取消规则是什么？","expected_doc_types":["policy"],"expected_categories":["order"],"expected_titles":["订单取消规则"]}
+{"id":"gov_027","question":"冷链配送延误应该怎么处理？","expected_doc_types":["policy","sop"],"expected_categories":["logistics"],"expected_titles":["生鲜冷链配送规则","物流异常工单处理 SOP"]}
+{"id":"gov_028","question":"质检不通过应该怎么办？","expected_doc_types":["policy"],"expected_categories":["aftersales"],"expected_titles":["质检不通过处理"],"expected_chunk_types":["procedure","escalation"]}
+{"id":"gov_029","question":"用户问能不能透露完整手机号和地址，该怎么判断？","expected_doc_types":["safety"],"expected_categories":["safety"],"expected_titles":["隐私与身份核验边界"],"expected_top_doc_type":"safety"}
+{"id":"gov_030","question":"退款未到账用户很生气要求投诉怎么办？","expected_doc_types":["safety","policy"],"expected_categories":["safety","aftersales"],"expected_titles":["必须转人工规则","投诉升级处理流程","退款到账时间说明"]}

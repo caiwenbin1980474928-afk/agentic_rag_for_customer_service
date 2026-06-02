@@ -1,0 +1,5 @@
+ticket_type,default_priority,upgrade_to_p1_when,first_response_sla
+物流工单,P2,冷链/生鲜/高价值/投诉/丢失,4小时
+售后工单,P2,质检争议/退款未到账/高价值/投诉,4小时
+发票工单,P3,专票资质/跨年度/企业急用,1个工作日
+投诉工单,P1,默认P1,2小时

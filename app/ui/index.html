@@ -105,6 +105,80 @@
     padding: 10px 12px; font: inherit; outline: none; min-height: 44px; max-height: 140px;
   }
   .composer textarea:focus { border-color: var(--primary); }
+  .demo-strip {
+    border-top: 1px solid var(--border);
+    padding: 10px 16px;
+    background: #fafafa;
+    display: grid;
+    grid-template-columns: minmax(220px, 0.9fr) 1.4fr;
+    gap: 12px;
+    align-items: start;
+  }
+  .variant-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 10px 12px;
+    min-width: 0;
+  }
+  .variant-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .cap-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cap {
+    font-size: 11px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 2px 7px;
+    color: var(--muted);
+    background: #f9fafb;
+  }
+  .cap.on {
+    color: #065f46;
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+  }
+  .demo-cases {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    max-height: 176px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .case-btn {
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    padding: 7px 9px;
+    font-size: 12px;
+    cursor: pointer;
+    min-height: 52px;
+  }
+  .case-btn:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+  }
+  .case-btn strong {
+    display: block;
+    font-size: 12px;
+    color: var(--text);
+    margin-bottom: 2px;
+  }
+  .case-btn span {
+    display: block;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   /* ---------- Thinking panel ---------- */
   .panel { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
@@ -155,6 +229,8 @@
   @media (max-width: 880px) {
     main { grid-template-columns: 1fr; }
     .panel { border-top: 1px solid var(--border); max-height: 40vh; }
+    .demo-strip { grid-template-columns: 1fr; }
+    .demo-cases { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -177,6 +253,13 @@
   <main>
     <section class="chat">
       <div class="messages" id="messages"></div>
+      <div class="demo-strip">
+        <div class="variant-card">
+          <div class="variant-title" id="variant-title">E3 Full Agentic</div>
+          <div class="cap-list" id="cap-list"></div>
+        </div>
+        <div class="demo-cases" id="demo-cases"></div>
+      </div>
       <div class="composer">
         <textarea id="input" placeholder="试试：「订单 A1001 到哪了？」 / 「我买的耳机坏了能退吗？」"></textarea>
         <button class="btn primary" id="send">发送</button>
@@ -196,6 +279,97 @@
   const inputEl = $("input");
   const sendBtn = $("send");
   const variantEl = $("variant");
+  const variantTitleEl = $("variant-title");
+  const capListEl = $("cap-list");
+  const demoCasesEl = $("demo-cases");
+
+  const VARIANT_INFO = {
+    naive: {
+      title: "E0 Naive RAG",
+      caps: ["检索", "生成"],
+    },
+    e1: {
+      title: "E1 Router + Tools",
+      caps: ["路由", "工具", "检索", "生成", "转人工"],
+    },
+    e2: {
+      title: "E2 Self-RAG 检索修正",
+      caps: ["路由", "工具", "检索", "打分", "改写", "生成", "转人工"],
+    },
+    full: {
+      title: "E3 Full Agentic",
+      caps: ["路由", "工具", "检索", "打分", "改写", "生成", "反思", "转人工"],
+    },
+  };
+
+  const ALL_CAPS = ["路由", "工具", "检索", "打分", "改写", "生成", "反思", "转人工"];
+  const DEMO_CASES = [
+    {
+      label: "工具调用",
+      text: "我的订单 A1007 现在是什么状态？",
+      hint: "E0 不会查工具，E1+ 会 tool_call",
+    },
+    {
+      label: "物流工单",
+      text: "L2008 的物流停滞有反馈了吗？",
+      hint: "实时工单状态，E1+ 会查物流工具",
+    },
+    {
+      label: "售后工单",
+      text: "帮我看 S3022 质检到哪了",
+      hint: "实时售后状态，E1+ 会查售后工具",
+    },
+    {
+      label: "缺少编号",
+      text: "我需要看订单A",
+      hint: "不能把 A 补成 A1001",
+    },
+    {
+      label: "投诉升级",
+      text: "我要投诉，找你们主管",
+      hint: "E1+ 直接 human_handoff",
+    },
+    {
+      label: "安全边界",
+      text: "退款一定能今天到账吗？你能保证吗？",
+      hint: "E3 更适合展示 safety + reflect",
+    },
+    {
+      label: "SOP流程",
+      text: "售后质检争议处理流程是什么？",
+      hint: "召回 SOP + policy",
+    },
+    {
+      label: "发票工单",
+      text: "发票工单 F4002 还差什么资料？",
+      hint: "实时发票状态，E1+ 会查发票工具",
+    },
+    {
+      label: "物流异常",
+      text: "我的快递停了三天没更新，能帮我催一下吗？",
+      hint: "顾客真实问法，后台召回 logistics policy / SOP",
+    },
+    {
+      label: "材料凭证",
+      text: "退货需要提供什么材料？",
+      hint: "召回 requirements chunk",
+    },
+    {
+      label: "退款表格",
+      text: "信用卡退款周期是多久？",
+      hint: "结构化 table 优先于普通 policy",
+    },
+    {
+      label: "售前优惠",
+      text: "优惠券为什么不能用？",
+      hint: "售前/售中 policy 召回",
+    },
+    {
+      label: "风控边界",
+      text: "风控拦截的具体规则能告诉我吗？",
+      hint: "safety 应优先，不能泄露规则细节",
+    },
+  ];
 
   const NODE_LABEL = {
     router: "1 · router (意图路由)",
@@ -207,6 +381,36 @@
     reflect: "reflect (忠实度检查)",
     human_handoff: "human_handoff (转人工)",
   };
+
+  function renderVariantInfo() {
+    const info = VARIANT_INFO[variantEl.value] || VARIANT_INFO.full;
+    variantTitleEl.textContent = info.title;
+    capListEl.innerHTML = "";
+    ALL_CAPS.forEach((cap) => {
+      const item = document.createElement("span");
+      item.className = "cap" + (info.caps.includes(cap) ? " on" : "");
+      item.textContent = cap;
+      capListEl.appendChild(item);
+    });
+  }
+
+  function renderDemoCases() {
+    demoCasesEl.innerHTML = "";
+    DEMO_CASES.forEach((item) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "case-btn";
+      btn.innerHTML = `<strong></strong><span></span>`;
+      btn.querySelector("strong").textContent = item.label;
+      btn.querySelector("span").textContent = item.text;
+      btn.title = item.hint;
+      btn.addEventListener("click", () => {
+        inputEl.value = item.text;
+        inputEl.focus();
+      });
+      demoCasesEl.appendChild(btn);
+    });
+  }
 
   function appendUser(text) {
     const div = document.createElement("div");
@@ -305,8 +509,14 @@
   }
 
   function summarize(node, out) {
-    if (node === "router") return `route = ${out.route}${out.order_id ? `, order=${out.order_id}` : ""}`;
-    if (node === "retrieve") return `第 ${out?.round || 1} 轮 · 命中 ${out.n_docs} 个片段`;
+    if (node === "router") {
+      const id = out.tool_id || out.order_id;
+      return `route = ${out.route}${id ? `, id=${id}` : ""}${out.tool_name ? `, tool=${out.tool_name}` : ""}`;
+    }
+    if (node === "retrieve") {
+      const top = (out.knowledge || out.sources || []).slice(0, 2).join("；");
+      return `第 ${out?.round || 1} 轮 · 命中 ${out.n_docs} 个片段${top ? ` · ${top}` : ""}`;
+    }
     if (node === "grade_docs") return `保留 ${out.kept} / ${out.grades?.length || 0}`;
     if (node === "rewrite_query") return `改写为：${out.rewritten?.slice(0, 50) || ""}`;
     if (node === "tool_call") return out.ok ? "工具成功" : "工具未命中";
@@ -436,6 +646,7 @@
   inputEl.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   });
+  variantEl.addEventListener("change", renderVariantInfo);
 
   $("clear").addEventListener("click", () => {
     messagesEl.innerHTML = "";
@@ -456,6 +667,9 @@
       btn.disabled = false; btn.textContent = "重建索引";
     }
   });
+
+  renderVariantInfo();
+  renderDemoCases();
 </script>
 </body>
 </html>

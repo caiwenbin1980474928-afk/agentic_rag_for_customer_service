@@ -1,0 +1,11 @@
+doc_id: SCRIPT_LOGISTICS
+doc_type: script
+title: 物流异常话术
+category: logistics
+business_stage: 物流配送
+version: v2026.06
+visibility: customer_safe
+priority: 70
+normal: 我先帮您看物流轨迹。如果超过48小时没有更新，会建议创建物流工单催促承运商。
+missing_info: 麻烦您提供订单号或物流工单号，我需要核对承运商和最新轨迹。
+handoff: 这个物流异常需要人工跟进承运商，我会帮您升级处理。

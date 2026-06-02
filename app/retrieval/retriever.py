@@ -21,8 +21,13 @@ def _store():
     return get_vectorstore()
 
 
-def retrieve_with_scores(query: str, k: int | None = None) -> list[tuple[Document, float]]:
+def retrieve_with_scores(
+    query: str,
+    k: int | None = None,
+    *,
+    metadata_filter: dict | None = None,
+) -> list[tuple[Document, float]]:
     """Return ``(Document, distance)`` pairs ordered by ascending distance."""
     settings = get_settings()
     k = k or settings.top_k
-    return _store().similarity_search_with_score(query, k=k)
+    return _store().similarity_search_with_score(query, k=k, filter=metadata_filter)
